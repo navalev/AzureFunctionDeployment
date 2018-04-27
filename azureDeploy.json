@@ -8,6 +8,14 @@
                 "description": "The name of the function app that you wish to create."
             }
         },
+        "appServicePlan" : {
+            "type": "string",
+            "defaultValue": "ServicePlan",
+            "allowedValues": [
+                "ServicePlan",
+                "Consumption"
+            ]
+        },
         "appServicePlanTier": {
             "type": "string",
             "defaultValue": "Free"
@@ -49,10 +57,12 @@
         }
     },
     "variables": {
-        "functionAppName": "[parameters('appName')]",
-        "hostingPlanName": "[variables('functionAppName')]",
+        "functionAppName": "[parameters('appName')]",        
         "storageAccountName": "[concat('func', uniquestring(resourceGroup().id))]",
-        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+	    "ServicePlan": "[concat('serviceplan', parameters('appName'))]",
+        "Consumption": "[concat('consumption', parameters('appName'))]",
+        "hostingPlanName": "[variables(parameters('appServicePlan'))]"
     },
     "resources": [
         {
@@ -67,12 +77,25 @@
         {
             "type": "Microsoft.Web/serverfarms",
             "apiVersion": "2016-09-01",
-            "name": "[variables('hostingPlanName')]",
+            "name": "[variables('ServicePlan')]",
             "location": "[resourceGroup().location]",
+            "condition": "[equals(parameters('appServicePlan'), 'ServicePlan')]",
             "sku": {
                 "tier": "[parameters('appServicePlanTier')]",
                 "name": "[parameters('appServicePlanName')]",
                 "capacity": "[parameters('appServicePlanCapacity')]"
+            }
+        },        
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2015-04-01",
+            "name": "[variables('Consumption')]",
+            "location": "[resourceGroup().location]",
+            "condition": "[equals(parameters('appServicePlan'), 'Consumption')]",
+            "properties": {
+                "name": "[variables('Consumption')]",
+                "computeMode": "Dynamic",
+                "sku": "Dynamic"
             }
         },
         {
